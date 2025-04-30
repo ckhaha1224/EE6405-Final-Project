@@ -1,0 +1,9 @@
+{
+  "emollm_sharegpt": {
+    "file_name": "data/emodata_sharegpt.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations"
+    }
+  }
+}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis with Emollama-chat-7b</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            padding-top: 2rem;
+            font-family: 'Inter', sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            border: none;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            background: linear-gradient(90deg, #4568dc, #b06ab3);
+            color: white;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1.2rem;
+            border: none;
+        }
+        .card-body {
+            padding: 1.8rem;
+        }
+        .result-card {
+            display: none;
+            margin-top: 24px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        .spinner-border {
+            width: 3.5rem;
+            height: 3.5rem;
+            color: #4568dc;
+        }
+        textarea {
+            resize: vertical;
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        textarea:focus {
+            border-color: #4568dc;
+            box-shadow: 0 0 0 3px rgba(69, 104, 220, 0.15);
+        }
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+        .form-select {
+            border-radius: 8px;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .form-select:focus {
+            border-color: #4568dc;
+            box-shadow: 0 0 0 3px rgba(69, 104, 220, 0.15);
+        }
+        .btn-primary {
+            background: #4568dc;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(69, 104, 220, 0.2);
+        }
+        .btn-primary:hover {
+            background: #3a5bc7;
+        }
+        .mb-3 {
+            margin-bottom: 1.5rem !important;
+        }
+        .bg-light {
+            background-color: #f8f9ff !important;
+            border-radius: 8px;
+            border: 1px solid #e8eaf6;
+        }
+        h2 {
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin: 0.3rem 0;
+        }
+        h5 {
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 0.8rem;
+        }
+        .lead {
+            font-size: 1.1rem;
+            color: #333;
+        }
+        #task-description {
+            line-height: 1.6;
+            color: #555;
+        }
+        #processing-time {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        .mt-2 {
+            margin-top: 1rem !important;
+            color: #666;
+        }
+        .task-description-card {
+            box-shadow: none;
+            border: 1px solid #e8eaf6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h2>Sentiment Analysis with EmoQwen</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="analysis-form">
+                            <div class="mb-3">
+                                <label for="task-type" class="form-label">Select Task Type:</label>
+                                <select class="form-select" id="task-type" required>
+                                    <option value="sentiment_classification" selected>Sentiment Classification</option>
+                                    <option value="sentiment_strength">Sentiment Strength</option>
+                                    <option value="emotion_intensity">Emotion Intensity</option>
+                                    <option value="emotion_classification">Emotion Classification</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3" id="emotion-selection" style="display: none;">
+                                <label for="emotion" class="form-label">Select Emotion:</label>
+                                <select class="form-select" id="emotion">
+                                    <option value="joy" selected>Joy</option>
+                                    <option value="anger">Anger</option>
+                                    <option value="fear">Fear</option>
+                                    <option value="sadness">Sadness</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="task-description" class="form-label">Task Description:</label>
+                                <div class="card bg-light task-description-card">
+                                    <div class="card-body">
+                                        <p id="task-description" class="mb-0"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="text" class="form-label">Text to Analyze:</label>
+                                <textarea class="form-control" id="text" rows="4" required placeholder="Enter the text you want to analyze..."></textarea>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">Analyze Text</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="loading">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing your request... This may take a few moments.</p>
+                </div>
+
+                <div class="card result-card">
+                    <div class="card-header">
+                        Analysis Result
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h5>Intensity Class:</h5>
+                            <p id="result-text" class="lead"></p>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Processing Time:</h5>
+                            <p id="processing-time"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Task descriptions
+        const taskDescriptions = {
+            'emotion_intensity': "Assign a numerical value between 0 (least EMOTION) and 1 (most EMOTION) to represent the intensity of emotion EMOTION expressed in the text.",
+            'sentiment_strength': "Evaluate the valence intensity of the writer's mental state based on the text, assigning it a real-valued score from 0 (most negative) to 1 (most positive).",
+            'sentiment_classification': "Categorize the text into an ordinal class that best characterizes the writer's mental state, considering various degrees of positive and negative sentiment intensity.<ul><li>3: very positive mental state can be inferred.</li><li>2: moderately positive mental state can be inferred.</li><li>1: slightly positive mental state can be inferred.</li><li>0: neutral or mixed mental state can be inferred.</li><li>-1: slightly negative mental state can be inferred.</li><li>-2: moderately negative mental state can be inferred.</li><li>-3: very negative mental state can be inferred.</li></ul>",
+            'emotion_classification': "Categorize the text's emotional tone as either 'neutral or no emotion' or identify the presence of one or more of the given emotions (anger, anticipation, disgust, fear, joy, love, optimism, pessimism, sadness, surprise, trust)."
+        };
+
+        // Function to update task description based on selected task type
+        function updateTaskDescription() {
+            const taskType = document.getElementById('task-type').value;
+            let descriptionText = taskDescriptions[taskType];
+
+            // Show/hide emotion selection based on task type
+            if (taskType === 'emotion_intensity') {
+                document.getElementById('emotion-selection').style.display = 'block';
+                const emotion = document.getElementById('emotion').value;
+                descriptionText = descriptionText.replaceAll('EMOTION', emotion);
+            } else {
+                document.getElementById('emotion-selection').style.display = 'none';
+            }
+
+            // 处理换行符，将其转换为HTML的<br>标签
+            descriptionText = descriptionText.replace(/\n/g, '<br>');
+            document.getElementById('task-description').innerHTML = descriptionText;
+        }
+
+        // Update description when page loads
+        window.addEventListener('DOMContentLoaded', updateTaskDescription);
+
+        // Update description when task type changes
+        document.getElementById('task-type').addEventListener('change', updateTaskDescription);
+
+        // Update description when emotion changes
+        document.getElementById('emotion').addEventListener('change', updateTaskDescription);
+
+        // Form submission handler
+        document.getElementById('analysis-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const taskType = document.getElementById('task-type').value;
+            const text = document.getElementById('text').value;
+            let emotion = '';
+
+            if (taskType === 'emotion_intensity') {
+                emotion = document.getElementById('emotion').value;
+            }
+
+            if (!text) {
+                alert('Please enter text to analyze');
+                return;
+            }
+
+            // Update results card heading based on task type
+            let resultLabel = "Result:";
+            if (taskType === 'emotion_intensity') {
+                resultLabel = "Intensity Score:";
+            } else if (taskType === 'sentiment_strength') {
+                resultLabel = "Intensity Score:";
+            } else if (taskType === 'sentiment_classification') {
+                resultLabel = "Intensity Class:";
+            } else if (taskType === 'emotion_classification') {
+                resultLabel = "Emotions Detected:";
+            }
+            document.querySelector('.result-card .card-header').textContent = resultLabel;
+
+            // Show loading spinner
+            document.querySelector('.loading').style.display = 'block';
+            document.querySelector('.result-card').style.display = 'none';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_type: taskType, text, emotion })
+                });
+
+                const data = await response.json();
+
+                // Hide loading spinner and show results
+                document.querySelector('.loading').style.display = 'none';
+                document.querySelector('.result-card').style.display = 'block';
+
+                // Update result text
+                document.getElementById('result-text').textContent = data.result;
+                document.getElementById('processing-time').textContent = data.processing_time;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.querySelector('.loading').style.display = 'none';
+                alert('An error occurred. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# Emo-Qwen Model Configuration
+
+# Model settings
+model:
+  path: "./model_Emo-Qwen/"
+  device: "auto"  # 'cuda' or 'cpu'
+  use_fp16: true  # Use half precision (FP16) for faster inference
+  load_params:
+    low_cpu_mem_usage: true
+    trust_remote_code: true
+
+# Inference settings
+inference:
+  # Prompt template for formatting inputs
+  prompt_template: |
+    Human: 
+    {instruction}
+    Text: {text}
+    
+    Assistant:
+  
+  # Batch processing settings
+  batch_size: 16
+  
+  # Generation parameters
+  generation:
+    temperature: 0.7
+    top_p: 0.9
+    do_sample: true
+    repetition_penalty: 1.1
+    max_new_tokens: 256
+    no_repeat_ngram_size: 3
+
+# Data settings
+data:
+  input_path: "data/test.json"
+  output_path: "output/predictions.json"
+  output_format: "jsonl"  # 'jsonl' or 'json'
+  
+  # Optional data preprocessing
+  transform:
+    # Add instruction to examples that don't have one
+    add_instruction: "Task: Evaluate the sentiment of the text."
+
+# Task templates for different emotion analysis tasks
+# These can be used programmatically when preparing your input data
+tasks:
+  emotion_intensity:
+    instruction: "Task: Assign a numerical value between 0 (least E) and 1 (most E) to represent the intensity of emotion E expressed in the text."
+    output_format: ">>{{value}}"
+  
+  sentiment_strength:
+    instruction: "Task: Evaluate the valence intensity of the writer's mental state based on the text, assigning it a real-valued score from 0 (most negative) to 1 (most positive)."
+    output_format: ">>{{value}}"
+  
+  emotion_classification:
+    instruction: "Task: Categorize the text's emotional tone as either 'neutral or no emotion' or identify the presence of one or more of the given emotions (anger, anticipation, disgust, fear, joy, love, optimism, pessimism, sadness, surprise, trust)."
+    output_format: ">>{{emotions}}"
+  
+  sentiment_classification:
+    instruction: "Task: Categorize the text into an ordinal class that best characterizes the writer's mental state, considering various degrees of positive and negative sentiment intensity. 3: very positive mental state can be inferred. 2: moderately positive mental state can be inferred. 1: slightly positive mental state can be inferred. 0: neutral or mixed mental state can be inferred. -1: slightly negative mental state can be inferred. -2: moderately negative mental state can be inferred. -3: very negative mental state can be inferred"
+    output_format: ">>{{class}}: {{description}}"
